@@ -54,19 +54,19 @@ jobs:
           SHOULD_PROCEED="false"
           
           if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
-            echo "APPROVED: Pull request was successfully merged"
+            echo "✅ APPROVED: Pull request was successfully merged"
             SHOULD_PROCEED="true"
           
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "APPROVED: Manual trigger initiated successfully"
+            echo "✅ APPROVED: Manual trigger initiated successfully"
             SHOULD_PROCEED="true"
           
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "BLOCKED: Pull request was closed without being merged"
+            echo "❌ BLOCKED: Pull request was closed without being merged"
             SHOULD_PROCEED="false"
           
           else
-            echo "BLOCKED: Unsupported trigger type '${{ github.event_name }}'"
+            echo "❌ BLOCKED: Unsupported trigger type '${{ github.event_name }}'"
             echo "Supported triggers: pull_request (merged), workflow_dispatch"
             SHOULD_PROCEED="false"
           fi
@@ -78,7 +78,7 @@ jobs:
           
           # Create step summary for GitHub UI
           if [[ "$SHOULD_PROCEED" == "true" ]]; then
-            echo "## Deployment Validation Passed" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ Deployment Validation Passed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
               echo "**Trigger:** Merged Pull Request" >> $GITHUB_STEP_SUMMARY
@@ -99,5 +99,5 @@ jobs:
             echo "🛑 **Deployment blocked to prevent accidental releases**" >> $GITHUB_STEP_SUMMARY
           fi
           
-          # Always exit successfully, use output to control downstream jobs
+          # Always exit successfully - use output to control downstream jobs
           exit 0
