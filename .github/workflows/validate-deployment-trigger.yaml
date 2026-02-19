@@ -27,11 +27,10 @@
 #   - should_proceed: 'true' if deployment should continue, 'false' if blocked
 #
 # The workflow will:
-#   - Always succeed (exit code 0) to prevent failed workflow runs
-#   - Set should_proceed output to 'false' for blocked triggers
 #   - Log detailed information about the trigger
 #   - Create a summary visible in the GitHub Actions UI
-#   - Downstream jobs should use 'if: needs.validate.outputs.should_proceed == true' to gate execution
+#   - Fail securely with timeout protection
+#   - Exit with appropriate codes for proper workflow orchestration
 
 name: Validate Deployment Trigger
 
@@ -61,6 +60,17 @@ jobs:
           echo "Validating deployment trigger..."
           echo "=========================================="
           
+          # Input validation - ensure required GitHub context is available
+          if [[ -z "${{ github.event_name }}" ]]; then
+            echo "ERROR: github.event_name is not available"
+            exit 1
+          fi
+          
+          if [[ -z "${{ github.actor }}" ]]; then
+            echo "ERROR: github.actor is not available"
+            exit 1
+          fi
+          
           echo "Event Type: ${{ github.event_name }}"
           echo "Actor: ${{ github.actor }}"
           echo "SHA: ${{ github.sha }}"
@@ -68,6 +78,7 @@ jobs:
           
           # Initialize result with fail-safe default
           SHOULD_PROCEED="false"
+          EXIT_CODE=0
           
           if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
             echo "VALIDATION RESULT: APPROVED"
@@ -96,6 +107,7 @@ jobs:
             echo "Closed By: ${{ github.event.pull_request.user.login }}"
             echo "Deployment blocked to prevent accidental releases."
             SHOULD_PROCEED="false"
+            EXIT_CODE=1
           
           else
             echo "VALIDATION RESULT: BLOCKED"
@@ -104,6 +116,7 @@ jobs:
             echo "Supported triggers: pull_request (merged), workflow_dispatch"
             echo "Deployment blocked due to invalid trigger."
             SHOULD_PROCEED="false"
+            EXIT_CODE=1
           fi
           
           echo "=========================================="
@@ -129,7 +142,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🚀 **Deployment will proceed**" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ⚠️ Deployment Validation Blocked" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ Deployment Validation Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event_name }}" == "pull_request" ]]; then
               echo "**Reason:** Pull request was closed without being merged" >> $GITHUB_STEP_SUMMARY
@@ -139,8 +152,8 @@ jobs:
               echo "**Reason:** Unsupported trigger type (${{ github.event_name }})" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🛑 **Deployment jobs will be skipped**" >> $GITHUB_STEP_SUMMARY
+            echo "🛑 **Deployment blocked to prevent accidental releases**" >> $GITHUB_STEP_SUMMARY
           fi
           
-          # Always exit successfully - downstream jobs use should_proceed to gate execution
-          echo "Validation complete. Use should_proceed output to gate downstream jobs."
+          # Exit with appropriate code
+          exit $EXIT_CODE
