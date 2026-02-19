@@ -8,15 +8,29 @@
 #
 # Blocked triggers:
 #   - pull_request (closed without merge): Pull requests that are abandoned or rejected
+#   - Any unsupported event types
 #
 # Usage:
 #   jobs:
 #     validate:
 #       uses: ./.github/workflows/validate-deployment-trigger.yaml
 #
-#     your-job:
+#     deploy:
 #       needs: [validate]
-#       # ... rest of your job configuration
+#       if: ${{ needs.validate.outputs.should_proceed == 'true' }}
+#       runs-on: ubuntu-latest
+#       steps:
+#         - name: Deploy Application
+#           run: echo "Deploying..."
+#
+# Output:
+#   - should_proceed: 'true' if deployment should continue, 'false' if blocked
+#
+# The workflow will:
+#   - Log detailed information about the trigger
+#   - Create a summary visible in the GitHub Actions UI
+#   - Fail securely with timeout protection
+#   - Exit with appropriate codes for proper workflow orchestration
 
 name: Validate Deployment Trigger
 
@@ -27,31 +41,124 @@ on:
         description: "Indicates whether the workflow should proceed based on the trigger type (merged PR or manual dispatch)"
         value: ${{ jobs.validate.outputs.should_proceed }}
 
-# Grant only read permissions to contents to ensure the workflow can check PR details without exposing unnecessary permissions.
+# Grant necessary permissions to access repository and pull request information
 permissions:
   contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       should_proceed: ${{ steps.check.outputs.should_proceed }}
     steps:
       - name: Validate Trigger
         id: check
+        timeout-minutes: 3
         run: |
+          # Fail-safe: Set default values
+          set -euo pipefail  # Exit on error, undefined variables, and pipe failures
+          
           echo "=========================================="
           echo "Validating deployment trigger..."
           echo "=========================================="
           
-          if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
-           echo "Pull request #${{ github.event.pull_request.number }} was merged. Proceeding with deployment."
-           echo "should_proceed=true" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "Manual trigger detected. Proceeding with deployment."
-            echo "should_proceed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Pull request #${{ github.event.pull_request.number }} was closed without merge. Skipping deployment."
-            echo "should_proceed=false" >> "$GITHUB_OUTPUT"
+          # Input validation - ensure required GitHub context is available
+          if [[ -z "${{ github.event_name }}" ]]; then
+            echo "ERROR: github.event_name is not available"
             exit 1
           fi
+          
+          if [[ -z "${{ github.actor }}" ]]; then
+            echo "ERROR: github.actor is not available"
+            exit 1
+          fi
+          
+          echo "Event Type: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "=========================================="
+          
+          # Initialize result with fail-safe default
+          SHOULD_PROCEED="false"
+          EXIT_CODE=0
+          
+          if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            echo "VALIDATION RESULT: APPROVED"
+            echo "Reason: Pull request was successfully merged"
+            echo "PR Number: #${{ github.event.pull_request.number }}"
+            echo "PR Title: ${{ github.event.pull_request.title }}"
+            echo "Source Branch: ${{ github.event.pull_request.head.ref }}"
+            echo "Target Branch: ${{ github.event.pull_request.base.ref }}"
+            echo "Merged By: ${{ github.event.pull_request.merged_by.login }}"
+            echo "Proceeding with deployment."
+            SHOULD_PROCEED="true"
+          
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "VALIDATION RESULT: APPROVED"
+            echo "Reason: Manual trigger initiated by authorized user"
+            echo "Triggered By: ${{ github.actor }}"
+            echo "Trigger Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "Proceeding with deployment."
+            SHOULD_PROCEED="true"
+          
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "VALIDATION RESULT: BLOCKED"
+            echo "Reason: Pull request was closed without being merged"
+            echo "PR Number: #${{ github.event.pull_request.number }}"
+            echo "PR Title: ${{ github.event.pull_request.title }}"
+            echo "PR State: ${{ github.event.pull_request.state }}"
+            echo "Closed By: ${{ github.event.pull_request.user.login }}"
+            echo "Deployment blocked to prevent accidental releases."
+            SHOULD_PROCEED="false"
+            EXIT_CODE=1
+          
+          else
+            echo "VALIDATION RESULT: BLOCKED"
+            echo "Reason: Unsupported trigger type"
+            echo "Event Name: ${{ github.event_name }}"
+            echo "Supported triggers: pull_request (merged), workflow_dispatch"
+            echo "Deployment blocked due to invalid trigger."
+            SHOULD_PROCEED="false"
+            EXIT_CODE=1
+          fi
+          
+          echo "=========================================="
+          echo "FINAL DECISION: Should Proceed = $SHOULD_PROCEED"
+          echo "=========================================="
+          
+          # Set output for downstream jobs
+          echo "should_proceed=$SHOULD_PROCEED" >> "$GITHUB_OUTPUT"
+          
+          # Create step summary for GitHub UI
+          if [[ "$SHOULD_PROCEED" == "true" ]]; then
+            echo "## ✅ Deployment Validation Passed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+              echo "**Trigger:** Merged Pull Request" >> $GITHUB_STEP_SUMMARY
+              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }}) - ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+              echo "**Branch:** ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}" >> $GITHUB_STEP_SUMMARY
+              echo "**Merged By:** ${{ github.event.pull_request.merged_by.login }}" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Trigger:** Manual Deployment" >> $GITHUB_STEP_SUMMARY
+              echo "**Triggered By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+              echo "**Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚀 **Deployment will proceed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Deployment Validation Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              echo "**Reason:** Pull request was closed without being merged" >> $GITHUB_STEP_SUMMARY
+              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }}) - ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+              echo "**Closed By:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Reason:** Unsupported trigger type (${{ github.event_name }})" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🛑 **Deployment blocked to prevent accidental releases**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Exit with appropriate code
+          exit $EXIT_CODE
