@@ -1,0 +1,49 @@
+# Reusable workflow that validates deployment triggers to ensure workflows only proceed
+# when triggered by appropriate events. This prevents accidental deployments from
+# pull requests that are closed without being merged.
+#
+# Allowed triggers:
+#   - workflow_dispatch: Manual triggers initiated by developers
+#   - pull_request (merged): Pull requests that have been successfully merged
+#
+# Blocked triggers:
+#   - pull_request (closed without merge): Pull requests that are abandoned or rejected
+#
+# Usage:
+#   jobs:
+#     validate:
+#       uses: ./.github/workflows/validate-deployment-trigger.yaml
+#
+#     your-job:
+#       needs: [validate]
+#       # ... rest of your job configuration
+
+name: Validate Deployment Trigger
+
+on:
+  workflow_call:
+    outputs:
+      should_proceed:
+        description: "Indicates whether the workflow should proceed based on the trigger type (merged PR or manual dispatch)"
+        value: ${{ jobs.validate.outputs.should_proceed }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_proceed: ${{ steps.check.outputs.should_proceed }}
+    steps:
+      - name: Validate Trigger
+        id: check
+        run: |
+          if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+           echo "Pull request #${{ github.event.pull_request.number }} was merged. Proceeding with deployment."
+           echo "should_proceed=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Manual trigger detected. Proceeding with deployment."
+            echo "should_proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Pull request #${{ github.event.pull_request.number }} was closed without merge. Skipping deployment."
+            echo "should_proceed=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi

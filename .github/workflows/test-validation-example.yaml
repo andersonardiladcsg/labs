@@ -1,0 +1,59 @@
+name: Test Validation Example
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+    types: [closed]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  # VALIDATE: Ensure workflow is triggered by either a manual dispatch or a merged PR
+  validate:
+    uses: ./.github/workflows/validate-deployment-trigger.yaml
+
+  # EXAMPLE JOB: This only runs if validation passes
+  example-job:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Echo Success Message
+        run: |
+          echo "Validation passed successfully!"
+          echo "This job only runs for:"
+          echo "  1. Manual triggers (workflow_dispatch)"
+          echo "  2. Merged pull requests"
+          echo ""
+          echo "Trigger: ${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "PR Number: ${{ github.event.pull_request.number }}"
+            echo "PR Merged: ${{ github.event.pull_request.merged }}"
+          fi
+
+      - name: Simulate Work
+        run: |
+          echo "Performing some work..."
+          sleep 2
+          echo "Work completed!"
+
+  # ANOTHER EXAMPLE JOB: Also depends on validation
+  another-example-job:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Another Task
+        run: |
+          echo "This is another job that only runs after validation passes"
+          echo "You can have multiple jobs that all depend on the validate job"
+
