@@ -27,6 +27,7 @@ on:
         description: "Indicates whether the workflow should proceed based on the trigger type (merged PR or manual dispatch)"
         value: ${{ jobs.validate.outputs.should_proceed }}
 
+
 jobs:
   validate:
     runs-on: ubuntu-latest
