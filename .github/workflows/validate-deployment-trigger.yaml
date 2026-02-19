@@ -1,0 +1,103 @@
+# Reusable workflow that validates deployment triggers to ensure workflows only proceed
+# when triggered by appropriate events. This prevents accidental deployments from
+# pull requests that are closed without being merged.
+#
+# Allowed triggers:
+#   - workflow_dispatch: Manual triggers initiated by developers
+#   - pull_request (merged): Pull requests that have been successfully merged
+#
+# Blocked triggers:
+#   - pull_request (closed without merge): Pull requests that are abandoned or rejected
+#   - Any unsupported event types
+#
+# Usage:
+#   jobs:
+#     validate:
+#       uses: ./.github/workflows/validate-deployment-trigger.yaml
+#
+#     deploy:
+#       needs: [validate]
+#       if: ${{ needs.validate.outputs.should_proceed == 'true' }}
+#       runs-on: ubuntu-latest
+#       steps:
+#         - name: Deploy Application
+#           run: echo "Deploying..."
+#
+# Output:
+#   - should_proceed: 'true' if deployment should continue, 'false' if blocked
+
+name: Validate Deployment Trigger
+
+on:
+  workflow_call:
+    outputs:
+      should_proceed:
+        description: "Indicates whether the workflow should proceed based on the trigger type (merged PR or manual dispatch)"
+        value: ${{ jobs.validate.outputs.should_proceed }}
+
+# Grant necessary permissions to access repository and pull request information
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should_proceed: ${{ steps.check.outputs.should_proceed }}
+    steps:
+      - name: Validate Trigger
+        id: check
+        timeout-minutes: 3
+        run: |
+          # Initialize result with fail-safe default
+          SHOULD_PROCEED="false"
+          
+          if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            echo "✅ APPROVED: Pull request was successfully merged"
+            SHOULD_PROCEED="true"
+          
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "✅ APPROVED: Manual trigger initiated successfully"
+            SHOULD_PROCEED="true"
+          
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "❌ BLOCKED: Pull request was closed without being merged"
+            SHOULD_PROCEED="false"
+          
+          else
+            echo "❌ BLOCKED: Unsupported trigger type '${{ github.event_name }}'"
+            echo "Supported triggers: pull_request (merged), workflow_dispatch"
+            SHOULD_PROCEED="false"
+          fi
+          
+          echo "Result: should_proceed=$SHOULD_PROCEED"
+          
+          # Set output for downstream jobs
+          echo "should_proceed=$SHOULD_PROCEED" >> "$GITHUB_OUTPUT"
+          
+          # Create step summary for GitHub UI
+          if [[ "$SHOULD_PROCEED" == "true" ]]; then
+            echo "## ✅ Deployment Validation Passed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+              echo "**Trigger:** Merged Pull Request" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Trigger:** Manual Deployment" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚀 **Deployment will proceed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⏸️ Deployment Blocked" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              echo "**Reason:** Pull request was closed without being merged" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Reason:** Unsupported trigger type (${{ github.event_name }})" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🛑 **Deployment blocked to prevent accidental releases**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Always exit successfully - use output to control downstream jobs
+          exit 0
