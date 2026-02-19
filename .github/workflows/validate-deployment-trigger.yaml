@@ -25,13 +25,6 @@
 #
 # Output:
 #   - should_proceed: 'true' if deployment should continue, 'false' if blocked
-#
-# The workflow will:
-#   - Always succeed (exit code 0) to prevent failed workflow runs
-#   - Set should_proceed output to 'false' for blocked triggers
-#   - Log detailed information about the trigger
-#   - Create a summary visible in the GitHub Actions UI
-#   - Downstream jobs should use 'if: needs.validate.outputs.should_proceed == true' to gate execution
 
 name: Validate Deployment Trigger
 
@@ -57,90 +50,54 @@ jobs:
         id: check
         timeout-minutes: 3
         run: |
-          echo "=========================================="
-          echo "Validating deployment trigger..."
-          echo "=========================================="
-          
-          echo "Event Type: ${{ github.event_name }}"
-          echo "Actor: ${{ github.actor }}"
-          echo "SHA: ${{ github.sha }}"
-          echo "=========================================="
-          
           # Initialize result with fail-safe default
           SHOULD_PROCEED="false"
           
           if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
-            echo "VALIDATION RESULT: APPROVED"
-            echo "Reason: Pull request was successfully merged"
-            echo "PR Number: #${{ github.event.pull_request.number }}"
-            echo "PR Title: ${{ github.event.pull_request.title }}"
-            echo "Source Branch: ${{ github.event.pull_request.head.ref }}"
-            echo "Target Branch: ${{ github.event.pull_request.base.ref }}"
-            echo "Merged By: ${{ github.event.pull_request.merged_by.login }}"
-            echo "Proceeding with deployment."
+            echo "APPROVED: Pull request was successfully merged"
             SHOULD_PROCEED="true"
           
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "VALIDATION RESULT: APPROVED"
-            echo "Reason: Manual trigger initiated by authorized user"
-            echo "Triggered By: ${{ github.actor }}"
-            echo "Proceeding with deployment."
+            echo "APPROVED: Manual trigger initiated successfully"
             SHOULD_PROCEED="true"
           
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "VALIDATION RESULT: BLOCKED"
-            echo "Reason: Pull request was closed without being merged"
-            echo "PR Number: #${{ github.event.pull_request.number }}"
-            echo "PR Title: ${{ github.event.pull_request.title }}"
-            echo "PR State: ${{ github.event.pull_request.state }}"
-            echo "Closed By: ${{ github.event.pull_request.user.login }}"
-            echo "Deployment blocked to prevent accidental releases."
+            echo "BLOCKED: Pull request was closed without being merged"
             SHOULD_PROCEED="false"
           
           else
-            echo "VALIDATION RESULT: BLOCKED"
-            echo "Reason: Unsupported trigger type"
-            echo "Event Name: ${{ github.event_name }}"
+            echo "BLOCKED: Unsupported trigger type '${{ github.event_name }}'"
             echo "Supported triggers: pull_request (merged), workflow_dispatch"
-            echo "Deployment blocked due to invalid trigger."
             SHOULD_PROCEED="false"
           fi
           
-          echo "=========================================="
-          echo "FINAL DECISION: Should Proceed = $SHOULD_PROCEED"
-          echo "=========================================="
+          echo "Result: should_proceed=$SHOULD_PROCEED"
           
           # Set output for downstream jobs
           echo "should_proceed=$SHOULD_PROCEED" >> "$GITHUB_OUTPUT"
           
           # Create step summary for GitHub UI
           if [[ "$SHOULD_PROCEED" == "true" ]]; then
-            echo "## ✅ Deployment Validation Passed" >> $GITHUB_STEP_SUMMARY
+            echo "## Deployment Validation Passed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
               echo "**Trigger:** Merged Pull Request" >> $GITHUB_STEP_SUMMARY
-              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})" >> $GITHUB_STEP_SUMMARY
-              echo "**Branch:** ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}" >> $GITHUB_STEP_SUMMARY
-              echo "**Merged By:** ${{ github.event.pull_request.merged_by.login }}" >> $GITHUB_STEP_SUMMARY
             else
               echo "**Trigger:** Manual Deployment" >> $GITHUB_STEP_SUMMARY
-              echo "**Triggered By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🚀 **Deployment will proceed**" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ⚠️ Deployment Validation Blocked" >> $GITHUB_STEP_SUMMARY
+            echo "## ⏸️ Deployment Blocked" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event_name }}" == "pull_request" ]]; then
               echo "**Reason:** Pull request was closed without being merged" >> $GITHUB_STEP_SUMMARY
-              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})" >> $GITHUB_STEP_SUMMARY
-              echo "**Closed By:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
             else
               echo "**Reason:** Unsupported trigger type (${{ github.event_name }})" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🛑 **Deployment jobs will be skipped**" >> $GITHUB_STEP_SUMMARY
+            echo "🛑 **Deployment blocked to prevent accidental releases**" >> $GITHUB_STEP_SUMMARY
           fi
           
-          # Always exit successfully - downstream jobs use should_proceed to gate execution
-          echo "Validation complete. Use should_proceed output to gate downstream jobs."
+          # Always exit successfully, use output to control downstream jobs
+          exit 0
