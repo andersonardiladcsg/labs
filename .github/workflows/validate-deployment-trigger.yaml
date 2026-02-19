@@ -56,9 +56,6 @@ jobs:
         id: check
         timeout-minutes: 3
         run: |
-          # Fail-safe: Set default values
-          set -euo pipefail  # Exit on error, undefined variables, and pipe failures
-          
           echo "=========================================="
           echo "Validating deployment trigger..."
           echo "=========================================="
@@ -98,7 +95,6 @@ jobs:
             echo "VALIDATION RESULT: APPROVED"
             echo "Reason: Manual trigger initiated by authorized user"
             echo "Triggered By: ${{ github.actor }}"
-            echo "Trigger Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             echo "Proceeding with deployment."
             SHOULD_PROCEED="true"
           
@@ -136,13 +132,12 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
               echo "**Trigger:** Merged Pull Request" >> $GITHUB_STEP_SUMMARY
-              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }}) - ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})" >> $GITHUB_STEP_SUMMARY
               echo "**Branch:** ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}" >> $GITHUB_STEP_SUMMARY
               echo "**Merged By:** ${{ github.event.pull_request.merged_by.login }}" >> $GITHUB_STEP_SUMMARY
             else
               echo "**Trigger:** Manual Deployment" >> $GITHUB_STEP_SUMMARY
               echo "**Triggered By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-              echo "**Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🚀 **Deployment will proceed**" >> $GITHUB_STEP_SUMMARY
@@ -151,7 +146,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event_name }}" == "pull_request" ]]; then
               echo "**Reason:** Pull request was closed without being merged" >> $GITHUB_STEP_SUMMARY
-              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }}) - ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+              echo "**PR:** [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})" >> $GITHUB_STEP_SUMMARY
               echo "**Closed By:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
             else
               echo "**Reason:** Unsupported trigger type (${{ github.event_name }})" >> $GITHUB_STEP_SUMMARY
