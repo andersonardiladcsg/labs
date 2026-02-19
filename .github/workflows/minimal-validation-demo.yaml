@@ -1,0 +1,31 @@
+name: Minimal Validation Demo
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Trigger
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Manual trigger - OK"
+          elif [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            echo "PR merged - OK"
+          else
+            echo "PR closed without merge - BLOCKED"
+            exit 1
+          fi
+
+  work:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Do Work
+        run: echo "This only runs if validation passes"
+
