@@ -23,6 +23,7 @@ jobs:
   # EXAMPLE JOB: This only runs if validation passes
   example-job:
     needs: [validate]
+    if: ${{ needs.validate.outputs.should_proceed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,6 +51,7 @@ jobs:
   # ANOTHER EXAMPLE JOB: Also depends on validation
   another-example-job:
     needs: [validate]
+    if: ${{ needs.validate.outputs.should_proceed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Another Task
