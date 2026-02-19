@@ -41,6 +41,22 @@ jobs:
             echo "PR Number: ${{ github.event.pull_request.number }}"
             echo "PR Merged: ${{ github.event.pull_request.merged }}"
           fi
+          
+          # Add to GitHub Step Summary
+          echo "## 🎉 Example Job Executed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Validation Status:** ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger Type:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "**Initiated By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 What This Demonstrates" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Workflow validation passed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Deployment-ready trigger detected" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 Step summary with markdown formatting" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_This summary appears in the GitHub Actions workflow run UI_" >> $GITHUB_STEP_SUMMARY
 
       - name: Simulate Work
         run: |
@@ -58,4 +74,16 @@ jobs:
         run: |
           echo "This is another job that only runs after validation passes"
           echo "You can have multiple jobs that all depend on the validate job"
+          
+          # Add to GitHub Step Summary
+          echo "## 🔧 Additional Job Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Job Status:** ✅ Completed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "**Dependencies:** Validated deployment trigger" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Multiple Jobs Example" >> $GITHUB_STEP_SUMMARY
+          echo "This demonstrates how multiple jobs can:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 Depend on the same validation step" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Contribute to the same step summary" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 Run in parallel after validation passes" >> $GITHUB_STEP_SUMMARY
 
