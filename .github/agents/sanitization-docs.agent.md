@@ -50,13 +50,21 @@ git diff <baseline-sha>..HEAD -- \
 
 If the diff is empty, **stop here** — tell the user the docs are already up to date and exit. Do **not** update the footer SHA, do **not** commit, and do **not** create a PR. Only proceed to subsequent steps when there are actual sanitizer code changes to document.
 
-To detect renamed or moved sanitizers, also run:
+To detect renamed or moved sanitizers, run:
 
 ```
 git diff --diff-filter=R --name-status <baseline-sha>..HEAD -- 'src/main/java/**/sanitizers/**'
 ```
 
 If a file shows as renamed (R status), treat it as a rename — update the source file link and class name in the docs rather than removing and re-adding the section.
+
+To detect deleted sanitizers, run:
+
+```
+git diff --diff-filter=D --name-status <baseline-sha>..HEAD -- 'src/main/java/**/sanitizers/**'
+```
+
+If a file shows as deleted (D status), remove its section from the docs and update the pipeline table. Use this list to populate the "Removed" field in the PR description.
 
 ## Step 3: Collect Related Commits
 
@@ -81,7 +89,10 @@ Read all of these:
 - **Every file** in `src/main/java/com/example/sanitizers/*.java`
 - `src/main/resources/application.properties`
 
-Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` against the files in the sanitizers directory. If there's a mismatch (file exists but isn't in the pipeline, or vice versa), mention it in the PR description.
+Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` against the files in the sanitizers directory:
+
+- **File exists but not in pipeline** — do **not** add it to the documentation. It may be a helper class, base class, or unused code. Flag it in the PR description under a "Warnings" section so the team can investigate.
+- **Pipeline references a class with no file** — flag it as a broken reference in the PR description under "Warnings". Do not create a documentation section for it.
 
 ## Step 5: Update the Documentation
 
@@ -117,6 +128,9 @@ The content between the markers must follow this structure:
 ## Git / Commit Rules
 
 - **Single commit only.** All changes must be in exactly one commit. If you need to make corrections after feedback, amend the existing commit (`git commit --amend --no-edit`) instead of creating a new one. The PR must always contain a single commit.
+- **Branch naming:** Always use the pattern `docs/update-sanitization-pipeline-<short-description>`. Examples:
+  - `docs/update-sanitization-pipeline-add-coupon-sanitizer`
+  - `docs/update-sanitization-pipeline-full-refresh`
 - **Commit message format:** Use this pattern:
   ```
   docs: update sanitization pipeline - <summary>
@@ -125,11 +139,12 @@ The content between the markers must follow this structure:
   - `docs: update sanitization pipeline - added QuantityLimitSanitizer`
   - `docs: update sanitization pipeline - updated PriceSanitizer config, removed LegacySanitizer`
   - `docs: update sanitization pipeline - full refresh (3 sanitizers changed)`
+- **PR base branch:** Always target `develop` as the base branch.
 - Do **not** modify any files other than `docs/cart-sanitization.md`.
 
 ## PR Description
 
-When creating the pull request, use this structure for the body:
+When creating the pull request, add the label `documentation`. Use this structure for the body:
 
 ```
 ## Summary
@@ -141,6 +156,13 @@ When creating the pull request, use this structure for the body:
 - **Added:** <list new sanitizers, or "none">
 - **Updated:** <list modified sanitizers, or "none">
 - **Removed:** <list removed sanitizers, or "none">
+- **Renamed:** <list renamed sanitizers with old → new name, or "none">
+
+## Warnings
+
+<List any mismatches found during cross-reference in Step 4, or "None">
+- Sanitizer files not in pipeline: <list, or "none">
+- Pipeline references without source files: <list, or "none">
 
 ## Related Commits
 
@@ -158,6 +180,17 @@ When creating the pull request, use this structure for the body:
 - [ ] AUTO-START/AUTO-END markers intact
 - [ ] Footer updated with current date and commit SHA
 ```
+
+## Error Handling
+
+If any command fails during execution:
+
+- **`gh pr list` or `gh pr create` fails** — report the error to the user and stop. Do not commit or push if the PR cannot be created.
+- **`git diff` or `git log` fails** — report the error and stop. The baseline may be corrupted or the repository in an unexpected state.
+- **`git commit` or `git push` fails** — report the error to the user. Do not retry automatically — the failure may indicate a permissions issue or branch protection rule.
+- **File read fails** (e.g., a sanitizer file referenced in the pipeline doesn't exist) — flag it in the PR description under "Warnings" and continue with the files that do exist. Do not fail the entire run for a single missing file.
+
+In all error cases, clearly tell the user what failed, what command produced the error, and suggest a corrective action.
 
 ## Rules
 
