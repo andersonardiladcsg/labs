@@ -1,9 +1,10 @@
 package com.example.services;
 
-import com.example.sanitizers.DuplicateSanitizer;
+import com.example.sanitizers.DeduplicationSanitizer;
 import com.example.sanitizers.PriceSanitizer;
 import com.example.sanitizers.InventorySanitizer;
 import com.example.sanitizers.QuantityLimitSanitizer;
+import com.example.sanitizers.CouponSanitizer;
 
 /**
  * Orchestrates the cart sanitization pipeline.
@@ -11,35 +12,40 @@ import com.example.sanitizers.QuantityLimitSanitizer;
  */
 public class CartSanitizerService {
 
-    private final DuplicateSanitizer duplicateSanitizer;
+    private final DeduplicationSanitizer deduplicationSanitizer;
     private final PriceSanitizer priceSanitizer;
     private final InventorySanitizer inventorySanitizer;
     private final QuantityLimitSanitizer quantityLimitSanitizer;
+    private final CouponSanitizer couponSanitizer;
 
     public CartSanitizerService(
-            DuplicateSanitizer duplicateSanitizer,
+            DeduplicationSanitizer deduplicationSanitizer,
             PriceSanitizer priceSanitizer,
             InventorySanitizer inventorySanitizer,
-            QuantityLimitSanitizer quantityLimitSanitizer) {
-        this.duplicateSanitizer = duplicateSanitizer;
+            QuantityLimitSanitizer quantityLimitSanitizer,
+            CouponSanitizer couponSanitizer) {
+        this.deduplicationSanitizer = deduplicationSanitizer;
         this.priceSanitizer = priceSanitizer;
         this.inventorySanitizer = inventorySanitizer;
         this.quantityLimitSanitizer = quantityLimitSanitizer;
+        this.couponSanitizer = couponSanitizer;
     }
 
     /**
      * Runs the full sanitization pipeline on the given cart.
      * Pipeline execution order:
-     * 1. DuplicateSanitizer      - remove duplicate SKUs
+     * 1. DeduplicationSanitizer   - remove duplicate SKUs
      * 2. PriceSanitizer           - validate and correct pricing
      * 3. InventorySanitizer       - check stock availability
      * 4. QuantityLimitSanitizer   - enforce per-item and cart-wide quantity limits
+     * 5. CouponSanitizer          - validate and apply coupon codes
      */
     public Cart sanitize(Cart cart) {
-        cart = duplicateSanitizer.sanitize(cart);       // Step 1
+        cart = deduplicationSanitizer.sanitize(cart);   // Step 1
         cart = priceSanitizer.sanitize(cart);           // Step 2
         cart = inventorySanitizer.sanitize(cart);       // Step 3
         cart = quantityLimitSanitizer.sanitize(cart);   // Step 4
+        cart = couponSanitizer.sanitize(cart);          // Step 5
         return cart;
     }
 }
