@@ -48,7 +48,16 @@ git diff <baseline-sha>..HEAD -- \
   'src/main/resources/application.properties'
 ```
 
-If the diff is empty, **stop here** — tell the user the docs are already up to date and exit. Do **not** update the footer SHA, do **not** commit, and do **not** create a PR. Only proceed to subsequent steps when there are actual sanitizer code changes to document.
+### Early exit — no changes detected
+
+If the diff is empty, you **must exit immediately**:
+
+1. Tell the user: _"No sanitizer code changes detected since the last documentation update. The docs are already up to date."_
+2. Do **not** proceed to Step 3 or any subsequent step.
+3. Do **not** update the footer SHA.
+4. Do **not** edit any files.
+5. Do **not** create a branch, commit, or PR.
+6. **End the task here.**
 
 To detect renamed or moved sanitizers, run:
 
@@ -101,7 +110,7 @@ Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` again
 3. Update the `Last updated` footer at the bottom of the file with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
 4. Do **not** modify any other files.
 
-**Important:** The footer SHA must only be updated when the content between the markers actually changes. If your analysis in Steps 1–4 results in no meaningful documentation changes (same pipeline, same behavior, same config), do not update the file at all — report that the docs are already accurate and stop.
+**Important:** If after writing the updated content between the markers, the result is identical to what was already there (same pipeline, same behavior, same config), **revert the file to its original state** and follow the early exit procedure from Step 2 — do not commit, do not create a branch, do not create a PR. Report that the docs are already accurate and end the task.
 
 ## Step 6: Self-Verification
 
@@ -127,6 +136,7 @@ The content between the markers must follow this structure:
 
 ## Git / Commit Rules
 
+- **Never create an empty PR.** Before committing, run `git diff -- docs/cart-sanitization.md`. If the diff is empty (no changes to the file), do **not** create a branch, commit, or PR. Report to the user that no documentation updates were needed and end the task.
 - **Single commit only.** All changes must be in exactly one commit. If you need to make corrections after feedback, amend the existing commit (`git commit --amend --no-edit`) instead of creating a new one. The PR must always contain a single commit.
 - **Branch naming:** Always use the pattern `docs/update-sanitization-pipeline-<short-description>`. Examples:
   - `docs/update-sanitization-pipeline-add-coupon-sanitizer`
