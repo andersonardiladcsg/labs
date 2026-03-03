@@ -208,6 +208,7 @@ gh label create documentation --description "Documentation updates" --color 0075
 
 If label creation fails (e.g., permissions error), report the error but continue — the PR can still be created without a label.
 
+
 Use this structure:
 
 ```
