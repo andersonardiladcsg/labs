@@ -5,6 +5,7 @@
 - **Never force push** without explicit approval from the user.
 - **Never amend commits** without explicit approval. Always create new commits by default. When a single-commit PR is required, amending is allowed to maintain that constraint.
 - **Always ask before pushing** — never push to remote without explicit approval from the user.
+- **Pull before starting** — run `git pull` on the current branch at the start of every new task to ensure you're working with the latest changes.
 - **Default branch is `develop`** — PRs should target `develop`, not `main`.
 - **Commit message format:** `TICKET-ID | Description` (e.g., `PROJ-1001 | Add backorder support`). Use `NON-JIRA |` prefix when there is no associated ticket.
 - **Branch naming:** `<prefix>/<short-description>` (e.g., `PROJ-1001/add-backorder-support`, `NON-JIRA/auto-sanitization-docs-agent`, `test/sanitization-docs-agent`).
