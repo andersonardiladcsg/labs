@@ -34,13 +34,25 @@ git diff <baseline-sha>..HEAD -- \
 
 If the diff is empty, tell the user the docs are already up to date — no changes needed.
 
-## Step 3: Read the Changed Source Files
+To detect renamed or moved sanitizers, also run:
 
-For each file that appears in the diff, read the full current source file to understand the complete context (not just the diff hunks). Always read:
+```
+git diff --diff-filter=R --name-status <baseline-sha>..HEAD -- 'src/main/java/**/sanitizers/**'
+```
+
+If a file shows as renamed (R status), treat it as a rename — update the source file link and class name in the docs rather than removing and re-adding the section.
+
+## Step 3: Read ALL Sanitizer Source Files
+
+Always read **every** sanitizer file and the service, not just the ones that changed. This ensures the pipeline table is complete and accurate even if a previous update was partial.
+
+Read all of these:
 
 - `src/main/java/com/example/services/CartSanitizerService.java` — the `sanitize()` method defines the pipeline execution order
-- Any sanitizer file that was modified: `src/main/java/com/example/sanitizers/*.java`
-- `src/main/resources/application.properties` — if configuration changed
+- **Every file** in `src/main/java/com/example/sanitizers/*.java`
+- `src/main/resources/application.properties`
+
+Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` against the files in the sanitizers directory. If there's a mismatch (file exists but isn't in the pipeline, or vice versa), mention it in the PR description.
 
 ## Step 4: Update the Documentation
 
@@ -48,6 +60,17 @@ For each file that appears in the diff, read the full current source file to und
 2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers.
 3. Update the `Last updated` footer at the bottom of the file with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
 4. Do **not** modify any other files.
+
+## Step 5: Self-Verification
+
+Before committing, verify your changes:
+
+1. **Markers present** — confirm both `<!-- AUTO-START -->` and `<!-- AUTO-END -->` are in the file.
+2. **Sanitizer count matches** — count the sanitizer calls in `CartSanitizerService.sanitize()` and confirm the pipeline table and numbered sections have the same count.
+3. **No broken links** — confirm every source file link in the pipeline table points to a file that actually exists (run `ls` on each path).
+4. **Footer updated** — confirm the `Last updated` line has today's date and a valid commit SHA (not "seed").
+
+If any check fails, fix the issue before committing. Do not commit broken documentation.
 
 ## Document Structure Rules
 
@@ -62,14 +85,46 @@ The content between the markers must follow this structure:
 
 ## Git / Commit Rules
 
-- **Single commit only.** All changes must be in exactly one commit. If you need to make corrections after feedback, amend the existing commit (`git commit --amend`) instead of creating a new one. The PR must always contain a single commit.
+- **Single commit only.** All changes must be in exactly one commit. If you need to make corrections after feedback, amend the existing commit (`git commit --amend --no-edit`) instead of creating a new one. The PR must always contain a single commit.
+- **Commit message format:** Use this pattern:
+  ```
+  docs: update sanitization pipeline - <summary>
+  ```
+  Where `<summary>` is a brief description of what changed. Examples:
+  - `docs: update sanitization pipeline - added QuantityLimitSanitizer`
+  - `docs: update sanitization pipeline - updated PriceSanitizer config, removed LegacySanitizer`
+  - `docs: update sanitization pipeline - full refresh (3 sanitizers changed)`
 - Do **not** modify any files other than `docs/cart-sanitization.md`.
+
+## PR Description
+
+When creating the pull request, use this structure for the body:
+
+```
+## Summary
+
+<1-2 sentence overview of what changed in the docs>
+
+## Changes Detected
+
+- **Added:** <list new sanitizers, or "none">
+- **Updated:** <list modified sanitizers, or "none">
+- **Removed:** <list removed sanitizers, or "none">
+
+## Verification
+
+- [ ] Sanitizer count in docs matches pipeline: <N> sanitizers
+- [ ] All source file links verified
+- [ ] AUTO-START/AUTO-END markers intact
+- [ ] Footer updated with current date and commit SHA
+```
 
 ## Rules
 
 - Be precise and factual — only document what the code actually does.
 - If the diff shows a new sanitizer was added to the pipeline, add a new section in the correct pipeline order.
 - If a sanitizer was removed, remove its section and update the pipeline table.
+- If a sanitizer was renamed or moved, update the class name and source link — do not delete and recreate the section.
 - If behavior, configuration properties, or external dependencies changed, update the relevant section.
 - Use consistent markdown formatting: tables for structured data, bullet lists for operations.
 - Keep relative links to source files (e.g., `../src/main/java/...`).
