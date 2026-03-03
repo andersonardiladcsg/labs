@@ -32,7 +32,7 @@ git diff <baseline-sha>..HEAD -- \
   'src/main/resources/application.properties'
 ```
 
-If the diff is empty, tell the user the docs are already up to date — no changes needed.
+If the diff is empty, **stop here** — tell the user the docs are already up to date and exit. Do **not** update the footer SHA, do **not** commit, and do **not** create a PR. Only proceed to subsequent steps when there are actual sanitizer code changes to document.
 
 To detect renamed or moved sanitizers, also run:
 
@@ -73,6 +73,8 @@ Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` again
 2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers.
 3. Update the `Last updated` footer at the bottom of the file with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
 4. Do **not** modify any other files.
+
+**Important:** The footer SHA must only be updated when the content between the markers actually changes. If your analysis in Steps 1–4 results in no meaningful documentation changes (same pipeline, same behavior, same config), do not update the file at all — report that the docs are already accurate and stop.
 
 ## Step 6: Self-Verification
 

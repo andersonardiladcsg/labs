@@ -6,9 +6,9 @@ import java.util.stream.Collectors;
 
 /**
  * Removes duplicate SKUs from the cart.
- * Keeps the first occurrence of each SKU and discards subsequent duplicates.
+ * Keeps the first occurrence of each SKU and merges quantities of subsequent duplicates.
  */
-public class DuplicateSanitizer {
+public class DeduplicationSanitizer {
 
     /**
      * Removes duplicate items from the cart based on SKU.
