@@ -26,6 +26,13 @@
 - Always ask before destructive or irreversible operations (force push, reset, delete branches, drop data).
 - When creating PRs, include a clear summary with sections for changes, test plan, and related tickets.
 
+## Maintaining This File
+
+- If a conversation establishes a new convention, preference, or project context that would apply across sessions, update this file as part of the same commit.
+- If the user explicitly asks to "remember" or "always do" something, add it to the appropriate section.
+- If an existing rule is contradicted by the user, update or remove it.
+- Don't add speculative or one-off rules — only stable patterns confirmed by the user.
+
 ## Project Context
 
 - This is a lab/testing repo (`andersonardiladcsg/labs`) used for prototyping before applying changes to `checkout-cart-engine`.
