@@ -1,0 +1,33 @@
+# CLAUDE.md
+
+## Git Rules
+
+- **Never force push** without explicit approval from the user.
+- **Never amend commits** without explicit approval. Always create new commits by default.
+- **Always push to remote** after committing — don't leave commits local unless told otherwise.
+- **Default branch is `develop`** — PRs should target `develop`, not `main`.
+- **Commit message format:** `TICKET-ID | Description` (e.g., `PROJ-1001 | Add backorder support`). Use `NON-JIRA |` prefix when there is no associated ticket.
+- **Branch naming:** `<prefix>/<short-description>` (e.g., `PROJ-1001/add-backorder-support`, `NON-JIRA/auto-sanitization-docs-agent`, `test/sanitization-docs-agent`).
+- Don't create PRs unless explicitly asked. Commit and push, then wait for instructions.
+- Don't skip hooks (`--no-verify`) or bypass signing unless explicitly asked.
+
+## Code & Changes
+
+- Read files before modifying them — understand existing code first.
+- Don't make changes beyond what was asked. No unsolicited refactors, comments, or "improvements".
+- Don't create documentation files (README, .md) unless explicitly requested.
+- Prefer editing existing files over creating new ones.
+
+## Communication
+
+- Be concise. Skip unnecessary preamble.
+- Don't ask for confirmation on safe, reversible operations (file edits, reads, local git commands).
+- Always ask before destructive or irreversible operations (force push, reset, delete branches, drop data).
+- When creating PRs, include a clear summary with sections for changes, test plan, and related tickets.
+
+## Project Context
+
+- This is a lab/testing repo (`andersonardiladcsg/labs`) used for prototyping before applying changes to `checkout-cart-engine`.
+- The sanitization pipeline lives in `src/main/java/com/example/sanitizers/` and is orchestrated by `CartSanitizerService.java`.
+- A custom Copilot agent (`.github/agents/sanitization-docs.agent.md`) maintains the sanitization pipeline documentation (`docs/cart-sanitization.md`) automatically.
+- Pipeline documentation uses `<!-- AUTO-START -->` / `<!-- AUTO-END -->` markers — only content between them is agent-managed.
