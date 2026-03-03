@@ -12,6 +12,22 @@ You maintain `docs/cart-sanitization.md` — the reference documentation for the
 
 When invoked, you determine what sanitizer code has changed since the documentation was last updated, then update the docs to reflect those changes.
 
+## Pre-flight: Check for Existing Documentation PRs
+
+Before doing any work, check if there is already an open (unmerged) pull request that you previously created to update the sanitization docs:
+
+```
+gh pr list --state open --search "docs: update sanitization pipeline" --json number,title,url,headRefName
+```
+
+If one or more open PRs are found:
+- **Stop here.** Do not proceed with any further steps.
+- Tell the user which PR(s) are still open (include the PR number, title, and URL).
+- Ask the user to either **merge** or **close** the existing PR(s) first, then re-run the agent.
+- This prevents conflicting branches and duplicate documentation updates.
+
+If no open PRs are found, proceed to Step 1.
+
 ## Step 1: Determine the Baseline
 
 Find when `docs/cart-sanitization.md` was last updated:
