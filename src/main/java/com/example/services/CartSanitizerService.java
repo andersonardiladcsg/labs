@@ -4,7 +4,7 @@ import com.example.sanitizers.DeduplicationSanitizer;
 import com.example.sanitizers.PriceSanitizer;
 import com.example.sanitizers.InventorySanitizer;
 import com.example.sanitizers.QuantityLimitSanitizer;
-import com.example.sanitizers.CouponSanitizer;
+import com.example.sanitizers.ShippingSanitizer;
 
 /**
  * Orchestrates the cart sanitization pipeline.
@@ -16,19 +16,19 @@ public class CartSanitizerService {
     private final PriceSanitizer priceSanitizer;
     private final InventorySanitizer inventorySanitizer;
     private final QuantityLimitSanitizer quantityLimitSanitizer;
-    private final CouponSanitizer couponSanitizer;
+    private final ShippingSanitizer shippingSanitizer;
 
     public CartSanitizerService(
             DeduplicationSanitizer deduplicationSanitizer,
             PriceSanitizer priceSanitizer,
             InventorySanitizer inventorySanitizer,
             QuantityLimitSanitizer quantityLimitSanitizer,
-            CouponSanitizer couponSanitizer) {
+            ShippingSanitizer shippingSanitizer) {
         this.deduplicationSanitizer = deduplicationSanitizer;
         this.priceSanitizer = priceSanitizer;
         this.inventorySanitizer = inventorySanitizer;
         this.quantityLimitSanitizer = quantityLimitSanitizer;
-        this.couponSanitizer = couponSanitizer;
+        this.shippingSanitizer = shippingSanitizer;
     }
 
     /**
@@ -38,14 +38,14 @@ public class CartSanitizerService {
      * 2. PriceSanitizer           - validate and correct pricing
      * 3. InventorySanitizer       - check stock availability
      * 4. QuantityLimitSanitizer   - enforce per-item and cart-wide quantity limits
-     * 5. CouponSanitizer          - validate and apply coupon codes
+     * 5. ShippingSanitizer        - validate shipping eligibility and costs
      */
     public Cart sanitize(Cart cart) {
         cart = deduplicationSanitizer.sanitize(cart);   // Step 1
         cart = priceSanitizer.sanitize(cart);           // Step 2
         cart = inventorySanitizer.sanitize(cart);       // Step 3
         cart = quantityLimitSanitizer.sanitize(cart);   // Step 4
-        cart = couponSanitizer.sanitize(cart);          // Step 5
+        cart = shippingSanitizer.sanitize(cart);        // Step 5
         return cart;
     }
 }
