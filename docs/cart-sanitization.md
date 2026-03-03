@@ -1,8 +1,7 @@
 # Cart Sanitization Pipeline
 
-> Reference documentation for the cart sanitization pipeline.
-> The pipeline runs every time a cart is retrieved or modified, ensuring data integrity
-> before the cart is returned to the client.
+> This page documents the cart sanitization pipeline — a series of steps that run every
+> time a cart is retrieved or modified to ensure data integrity before it is returned to the client.
 
 ## Pipeline Overview
 
@@ -14,12 +13,12 @@ Each sanitizer runs in strict sequence; the output of one feeds into the next.
 
 ## Pipeline Execution Order
 
-| # | Sanitizer | Source File | Purpose |
-|---|-----------|-------------|---------|
-| 1 | DuplicateSanitizer | [`DuplicateSanitizer.java`](../src/main/java/com/example/sanitizers/DuplicateSanitizer.java) | Remove duplicate SKUs |
-| 2 | PriceSanitizer | [`PriceSanitizer.java`](../src/main/java/com/example/sanitizers/PriceSanitizer.java) | Validate and correct pricing |
-| 3 | InventorySanitizer | [`InventorySanitizer.java`](../src/main/java/com/example/sanitizers/InventorySanitizer.java) | Check stock availability |
-| 4 | QuantityLimitSanitizer | [`QuantityLimitSanitizer.java`](../src/main/java/com/example/sanitizers/QuantityLimitSanitizer.java) | Enforce per-item and cart-wide quantity limits |
+| Step | Sanitizer | Source | What it does |
+|------|-----------|--------|--------------|
+| 1 | DuplicateSanitizer | [`DuplicateSanitizer.java`](../src/main/java/com/example/sanitizers/DuplicateSanitizer.java) | Deduplicates cart items by SKU |
+| 2 | PriceSanitizer | [`PriceSanitizer.java`](../src/main/java/com/example/sanitizers/PriceSanitizer.java) | Validates and corrects item pricing |
+| 3 | InventorySanitizer | [`InventorySanitizer.java`](../src/main/java/com/example/sanitizers/InventorySanitizer.java) | Removes or adjusts items based on stock availability |
+| 4 | QuantityLimitSanitizer | [`QuantityLimitSanitizer.java`](../src/main/java/com/example/sanitizers/QuantityLimitSanitizer.java) | Enforces per-item and cart-wide quantity limits |
 
 ---
 
@@ -27,17 +26,17 @@ Each sanitizer runs in strict sequence; the output of one feeds into the next.
 
 **Purpose:** Removes duplicate SKUs from the cart, keeping the first occurrence of each.
 
-### Behavior / Key Operations
+### What it does
 
-- Iterates over cart items using a `LinkedHashMap` keyed by SKU to preserve insertion order
-- Keeps the first occurrence of each SKU, discards subsequent duplicates
-- Logs a warning when duplicates are removed
+- Uses a `LinkedHashMap` keyed by SKU to deduplicate while preserving insertion order
+- Keeps the first occurrence of each SKU and silently drops any later duplicates
+- Logs a warning whenever duplicates are removed
 
-### Configuration Properties
+### Configuration
 
 _None_
 
-### External Dependencies
+### Dependencies
 
 _None_
 
@@ -45,54 +44,54 @@ _None_
 
 ## 2. PriceSanitizer
 
-**Purpose:** Validates and corrects pricing for cart items by fetching current prices and applying discount caps.
+**Purpose:** Validates and corrects item pricing by fetching live prices and capping excessive discounts.
 
-### Behavior / Key Operations
+### What it does
 
-- Fetches current price from PricingService for each SKU
-- Removes items with price below the minimum threshold
-- Caps discounts at a configurable maximum percentage (default: 50%)
-- Adds user-facing messages when prices are corrected or items removed
+- Looks up the current price for each item via `PricingService`
+- Drops items whose price falls below the configured minimum
+- Caps discounts at the configured maximum (default: 50%)
+- Notifies the customer when a price is corrected or an item is removed
 
-### Configuration Properties
+### Configuration
 
 | Property | Default | Description |
 |----------|---------|-------------|
 | `sanitizer.price.max-discount-percent` | `50.0` | Maximum discount percentage allowed |
-| `sanitizer.price.min-price` | `0.01` | Minimum valid price; items below this are removed |
+| `sanitizer.price.min-price` | `0.01` | Items priced below this value are removed |
 
-### External Dependencies
+### Dependencies
 
 | Service | Purpose |
 |---------|---------|
-| PricingService | Fetch current prices by SKU |
+| PricingService | Provides current prices by SKU |
 
 ---
 
 ## 3. InventorySanitizer
 
-**Purpose:** Checks stock availability and adjusts quantities or removes out-of-stock items.
+**Purpose:** Checks stock availability and adjusts or removes items that can't be fulfilled.
 
-### Behavior / Key Operations
+### What it does
 
-- Calls InventoryService to check available stock per SKU
-- Removes items with zero available stock
-- When quantity exceeds stock and `autoAdjustQuantity` is enabled: adjusts quantity down to available stock
-- When quantity exceeds stock and `autoAdjustQuantity` is disabled: removes the item
-- Sets `inStock` flag on each item
-- Adds user-facing messages when quantities are adjusted or items removed
+- Queries `InventoryService` for available stock per SKU
+- Removes items that are completely out of stock
+- If quantity exceeds available stock and `autoAdjustQuantity` is enabled, reduces the quantity to match stock
+- If quantity exceeds available stock and `autoAdjustQuantity` is disabled, removes the item entirely
+- Sets an `inStock` flag on each remaining item
+- Notifies the customer when quantities are adjusted or items are removed
 
-### Configuration Properties
+### Configuration
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `sanitizer.inventory.auto-adjust-quantity` | `true` | When true, reduces quantity to match stock instead of removing the item |
+| `sanitizer.inventory.auto-adjust-quantity` | `true` | When `true`, reduces quantity to match stock rather than removing the item |
 
-### External Dependencies
+### Dependencies
 
 | Service | Purpose |
 |---------|---------|
-| InventoryService | Check available stock by SKU |
+| InventoryService | Provides available stock counts by SKU |
 
 ---
 
@@ -100,23 +99,23 @@ _None_
 
 **Purpose:** Enforces per-item and cart-wide quantity limits after stock availability has been checked.
 
-### Behavior / Key Operations
+### What it does
 
-- Clamps each item's quantity to the configured `[minQuantityPerItem, maxQuantityPerItem]` range
-- If an item's quantity exceeds the maximum, reduces it to the maximum and adds a user-facing message
-- If an item's quantity is below the minimum, raises it to the minimum and adds a user-facing message
-- If the total number of unique SKUs in the cart exceeds `maxCartSize`, removes items from the end of the list until within the limit
-- Adds a user-facing message when items are removed due to cart size overflow
+- Clamps each item's quantity within the configured minimum and maximum bounds
+- If a quantity exceeds the maximum, it is reduced and the customer is notified
+- If a quantity is below the minimum, it is raised and the customer is notified
+- If the cart contains more unique SKUs than the configured maximum, trailing items are removed until the cart is within the limit
+- Notifies the customer when items are dropped due to cart size overflow
 
-### Configuration Properties
+### Configuration
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `sanitizer.quantity-limit.max-per-item` | `10` | Maximum quantity allowed per item |
-| `sanitizer.quantity-limit.min-per-item` | `1` | Minimum quantity allowed per item |
-| `sanitizer.quantity-limit.max-cart-size` | `50` | Maximum number of unique SKUs in the cart |
+| `sanitizer.quantity-limit.max-per-item` | `10` | Maximum quantity allowed per line item |
+| `sanitizer.quantity-limit.min-per-item` | `1` | Minimum quantity allowed per line item |
+| `sanitizer.quantity-limit.max-cart-size` | `50` | Maximum number of distinct SKUs in the cart |
 
-### External Dependencies
+### Dependencies
 
 _None_
 
