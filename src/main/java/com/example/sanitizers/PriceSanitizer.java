@@ -9,6 +9,7 @@ public class PriceSanitizer {
     // Configurable via application.properties
     private double maxDiscountPercent = 50.0;
     private double minPrice = 0.01;
+    private boolean priceMatchEnabled = false;
 
     /**
      * Validates prices for all items in the cart.
@@ -16,6 +17,7 @@ public class PriceSanitizer {
      * - Applies discount cap (max 50% off by default)
      * - Removes items with price <= 0
      * - Adds user message when price was corrected
+     * - When priceMatchEnabled=true, matches competitor prices via PriceMatchService
      */
     public Cart sanitize(Cart cart) {
         cart.getItems().removeIf(item -> {
