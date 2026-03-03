@@ -9,6 +9,7 @@
 - **Commit message format:** `TICKET-ID | Description` (e.g., `PROJ-1001 | Add backorder support`). Use `NON-JIRA |` prefix when there is no associated ticket.
 - **Branch naming:** `<prefix>/<short-description>` (e.g., `PROJ-1001/add-backorder-support`, `NON-JIRA/auto-sanitization-docs-agent`, `test/sanitization-docs-agent`).
 - Don't create PRs unless explicitly asked. Commit and push, then wait for instructions.
+- **No Co-Authored-By** — never append `Co-Authored-By` trailers to commit messages.
 - Don't skip hooks (`--no-verify`) or bypass signing unless explicitly asked.
 
 ## Code & Changes
