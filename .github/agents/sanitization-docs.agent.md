@@ -57,7 +57,8 @@ If the diff is empty, you **must exit immediately**:
 3. Do **not** update the footer SHA.
 4. Do **not** edit any files.
 5. Do **not** create a branch, commit, or PR.
-6. **End the task here.**
+6. Do **not** open a pull request or GitHub issue to communicate this result — a plain-text reply is sufficient.
+7. **End the task here.**
 
 To detect renamed or moved sanitizers, run:
 
@@ -136,7 +137,7 @@ The content between the markers must follow this structure:
 
 ## Git / Commit Rules
 
-- **Never create an empty PR.** Before committing, run `git diff -- docs/cart-sanitization.md`. If the diff is empty (no changes to the file), do **not** create a branch, commit, or PR. Report to the user that no documentation updates were needed and end the task.
+- **Never create an empty PR.** Before committing, run `git diff -- docs/cart-sanitization.md`. If the diff is empty (no changes to the file), do **not** create a branch, commit, or PR — not even to report the "no changes" finding. Report the result to the user as plain text and end the task.
 - **Single commit only.** All changes must be in exactly one commit. If you need to make corrections after feedback, amend the existing commit (`git commit --amend --no-edit`) instead of creating a new one. The PR must always contain a single commit.
 - **Branch naming:** Always use the pattern `docs/update-sanitization-pipeline-<short-description>`. Examples:
   - `docs/update-sanitization-pipeline-add-coupon-sanitizer`
@@ -195,7 +196,8 @@ When creating the pull request, add the label `documentation`. Use this structur
 
 If any command fails during execution:
 
-- **`gh pr list` or `gh pr create` fails** — report the error to the user and stop. Do not commit or push if the PR cannot be created.
+- **`gh pr list` fails** — log the error to the user, skip the pre-flight duplicate-PR check, and continue to Step 1. The diff check in Step 2 will still catch the no-changes case and exit cleanly without creating a PR.
+- **`gh pr create` fails** — report the error to the user and stop. Do not retry automatically — the failure may indicate a permissions issue or branch protection rule.
 - **`git diff` or `git log` fails** — report the error and stop. The baseline may be corrupted or the repository in an unexpected state.
 - **`git commit` or `git push` fails** — report the error to the user. Do not retry automatically — the failure may indicate a permissions issue or branch protection rule.
 - **File read fails** (e.g., a sanitizer file referenced in the pipeline doesn't exist) — flag it in the PR description under "Warnings" and continue with the files that do exist. Do not fail the entire run for a single missing file.
