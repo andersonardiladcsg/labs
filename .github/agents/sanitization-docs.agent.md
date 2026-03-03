@@ -194,19 +194,17 @@ Use this as the reference format for each sanitizer section:
 
 ## PR Description
 
-When creating the pull request, add the label `documentation`. Before creating the PR, check if the label exists:
+When creating the pull request, add the label `documentation`. Before creating the PR, ensure the label exists:
 
-```
-gh label list --search documentation --json name --jq '.[].name' | grep -q '^documentation$'
-```
-
-If the label does not exist, create it:
-
-```
-gh label create documentation --description "Documentation updates" --color 0075ca
+```bash
+if ! gh label list --search documentation --json name --jq '.[].name' | grep -q '^documentation$'; then
+  if ! gh label create documentation --description "Documentation updates" --color 0075ca; then
+    echo "Warning: could not create 'documentation' label. Continuing without it."
+  fi
+fi
 ```
 
-If label creation fails (e.g., permissions error), report the error but continue — the PR can still be created without a label.
+If label creation fails, log the warning and continue — create the PR without the label rather than aborting.
 
 
 Use this structure:

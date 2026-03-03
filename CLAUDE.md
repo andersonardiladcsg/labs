@@ -4,8 +4,8 @@
 
 - **Never force push** without explicit approval from the user.
 - **Never amend commits** without explicit approval. Always create new commits by default. When a single-commit PR is required, amending is allowed to maintain that constraint.
-- **Always ask before pushing** — never push to remote without explicit approval from the user. Before pushing, fetch the remote and check for conflicts. If there are conflicts, resolve them before pushing.
-- **Pull before starting** — run `git pull` on the current branch at the start of every new task to ensure you're working with the latest changes. When creating a new branch from develop, pull develop first to avoid conflicts.
+- **Always ask before pushing** — never push to remote without explicit approval from the user. Before pushing, run `git fetch origin` then `git rebase origin/<branch>` to incorporate remote changes without merge commits. If rebase conflicts arise, resolve them before pushing.
+- **Sync before starting** — run `git fetch origin && git rebase origin/<branch>` on the current branch at the start of every new task. When creating a new branch from develop, fetch and rebase develop first (`git fetch origin && git rebase origin/develop`) to branch from the latest state.
 - **Default branch is `develop`** — PRs should target `develop`, not `main`.
 - **Commit message format:** `TICKET-ID | Description` (e.g., `PROJ-1001 | Add backorder support`). Use `NON-JIRA |` prefix when there is no associated ticket.
 - **Branch naming:** `<prefix>/<short-description>` (e.g., `PROJ-1001/add-backorder-support`, `NON-JIRA/auto-sanitization-docs-agent`, `test/sanitization-docs-agent`).
