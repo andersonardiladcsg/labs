@@ -105,10 +105,10 @@ Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` again
 ## Step 5: Update the Documentation
 
 1. Read `docs/cart-sanitization.md`.
-2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers.
-3. Update the `Last updated` footer at the bottom of the file with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
-4. Do **not** modify any other files.
-5. After editing, run `git diff -- docs/cart-sanitization.md`. If the diff is empty (content is identical to what was already there), run `git checkout -- docs/cart-sanitization.md` to discard any staged or unstaged changes to the file, then end the task — do not commit or create a PR.
+2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers. Do **not** touch the footer yet.
+3. Run `git diff -- docs/cart-sanitization.md` to check if the content between markers actually changed. If the diff is empty, run `git checkout -- docs/cart-sanitization.md` to discard changes and end the task — do not update the footer, do not commit, do not create a PR. A plain-text reply is sufficient.
+4. If the diff is **not** empty, update the `Last updated` footer with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
+5. Do **not** modify any other files.
 
 ---
 
@@ -194,11 +194,18 @@ Use this as the reference format for each sanitizer section:
 
 ## PR Description
 
-When creating the pull request, add the label `documentation`. If the label doesn't exist yet, create it first:
+When creating the pull request, add the label `documentation`. Before creating the PR, ensure the label exists:
 
+```bash
+if ! gh label list --search documentation --json name --jq '.[].name' | grep -q '^documentation$'; then
+  if ! gh label create documentation --description "Documentation updates" --color 0075ca; then
+    echo "Warning: could not create 'documentation' label. Continuing without it."
+  fi
+fi
 ```
-gh label create documentation --description "Documentation updates" --color 0075ca 2>/dev/null || true
-```
+
+If label creation fails, log the warning and continue — create the PR without the label rather than aborting.
+
 
 Use this structure:
 
