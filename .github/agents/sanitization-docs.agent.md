@@ -42,7 +42,20 @@ git diff --diff-filter=R --name-status <baseline-sha>..HEAD -- 'src/main/java/**
 
 If a file shows as renamed (R status), treat it as a rename — update the source file link and class name in the docs rather than removing and re-adding the section.
 
-## Step 3: Read ALL Sanitizer Source Files
+## Step 3: Collect Related Commits
+
+Run this command to get the list of commits that changed sanitizer files since the baseline:
+
+```
+git --no-pager log --oneline <baseline-sha>..HEAD -- \
+  'src/main/java/**/sanitizers/**' \
+  'src/main/java/**/services/CartSanitizerService.java' \
+  'src/main/resources/application.properties'
+```
+
+Save this list — you'll include it in the PR description. If commit messages contain ticket/issue IDs (e.g., `PROJ-1234`, `#123`), extract those as well so the PR links back to the original tickets.
+
+## Step 4: Read ALL Sanitizer Source Files
 
 Always read **every** sanitizer file and the service, not just the ones that changed. This ensures the pipeline table is complete and accurate even if a previous update was partial.
 
@@ -54,14 +67,14 @@ Read all of these:
 
 Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` against the files in the sanitizers directory. If there's a mismatch (file exists but isn't in the pipeline, or vice versa), mention it in the PR description.
 
-## Step 4: Update the Documentation
+## Step 5: Update the Documentation
 
 1. Read `docs/cart-sanitization.md`.
 2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers.
 3. Update the `Last updated` footer at the bottom of the file with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
 4. Do **not** modify any other files.
 
-## Step 5: Self-Verification
+## Step 6: Self-Verification
 
 Before committing, verify your changes:
 
@@ -110,6 +123,15 @@ When creating the pull request, use this structure for the body:
 - **Added:** <list new sanitizers, or "none">
 - **Updated:** <list modified sanitizers, or "none">
 - **Removed:** <list removed sanitizers, or "none">
+
+## Related Commits
+
+| Commit | Message |
+|--------|---------|
+| `<short-sha>` | <commit message> |
+| ... | ... |
+
+**Related tickets:** <list any ticket IDs extracted from commit messages (e.g., PROJ-1234, #123), or "none">
 
 ## Verification
 
