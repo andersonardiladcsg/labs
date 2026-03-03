@@ -105,10 +105,10 @@ Cross-reference the sanitizers listed in `CartSanitizerService.sanitize()` again
 ## Step 5: Update the Documentation
 
 1. Read `docs/cart-sanitization.md`.
-2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers.
-3. Update the `Last updated` footer at the bottom of the file with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
-4. Do **not** modify any other files.
-5. After editing, run `git diff -- docs/cart-sanitization.md`. If the diff is empty (content is identical to what was already there), run `git checkout -- docs/cart-sanitization.md` to discard any staged or unstaged changes to the file, then end the task — do not commit or create a PR.
+2. Update **only** the content between `<!-- AUTO-START -->` and `<!-- AUTO-END -->` markers. Do **not** touch the footer yet.
+3. Run `git diff -- docs/cart-sanitization.md` to check if the content between markers actually changed. If the diff is empty, run `git checkout -- docs/cart-sanitization.md` to discard changes and end the task — do not update the footer, do not commit, do not create a PR. A plain-text reply is sufficient.
+4. If the diff is **not** empty, update the `Last updated` footer with today's date and the current HEAD commit SHA (run `git rev-parse HEAD` to get it).
+5. Do **not** modify any other files.
 
 ---
 
