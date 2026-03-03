@@ -15,21 +15,22 @@ Each sanitizer runs in strict sequence; the output of one feeds into the next.
 
 | Step | Sanitizer | Source | What it does |
 |------|-----------|--------|--------------|
-| 1 | DuplicateSanitizer | [`DuplicateSanitizer.java`](../src/main/java/com/example/sanitizers/DuplicateSanitizer.java) | Deduplicates cart items by SKU |
+| 1 | DeduplicationSanitizer | [`DeduplicationSanitizer.java`](../src/main/java/com/example/sanitizers/DeduplicationSanitizer.java) | Deduplicates cart items by SKU |
 | 2 | PriceSanitizer | [`PriceSanitizer.java`](../src/main/java/com/example/sanitizers/PriceSanitizer.java) | Validates and corrects item pricing |
 | 3 | InventorySanitizer | [`InventorySanitizer.java`](../src/main/java/com/example/sanitizers/InventorySanitizer.java) | Removes or adjusts items based on stock availability |
 | 4 | QuantityLimitSanitizer | [`QuantityLimitSanitizer.java`](../src/main/java/com/example/sanitizers/QuantityLimitSanitizer.java) | Enforces per-item and cart-wide quantity limits |
+| 5 | CouponSanitizer | [`CouponSanitizer.java`](../src/main/java/com/example/sanitizers/CouponSanitizer.java) | Validates and applies coupon codes |
 
 ---
 
-## 1. DuplicateSanitizer
+## 1. DeduplicationSanitizer
 
 **Purpose:** Removes duplicate SKUs from the cart, keeping the first occurrence of each.
 
 ### What it does
 
 - Uses a `LinkedHashMap` keyed by SKU to deduplicate while preserving insertion order
-- Keeps the first occurrence of each SKU and silently drops any later duplicates
+- Keeps the first occurrence of each SKU and drops any later duplicates
 - Logs a warning whenever duplicates are removed
 
 ### Configuration
@@ -75,23 +76,26 @@ _None_
 ### What it does
 
 - Queries `InventoryService` for available stock per SKU
-- Removes items that are completely out of stock
+- Removes items that are completely out of stock (unless backorder is enabled for that SKU)
 - If quantity exceeds available stock and `autoAdjustQuantity` is enabled, reduces the quantity to match stock
 - If quantity exceeds available stock and `autoAdjustQuantity` is disabled, removes the item entirely
-- Sets an `inStock` flag on each remaining item
-- Notifies the customer when quantities are adjusted or items are removed
+- When `backorderEnabled` is `true` and a SKU is backorder-eligible, keeps the item as a backorder with quantity capped at `maxBackorderQuantity`
+- Sets `inStock` and `backordered` flags on each remaining item
+- Notifies the customer when quantities are adjusted, items are backordered, or items are removed
 
 ### Configuration
 
 | Property | Default | Description |
 |----------|---------|-------------|
 | `sanitizer.inventory.auto-adjust-quantity` | `true` | When `true`, reduces quantity to match stock rather than removing the item |
+| `sanitizer.inventory.backorder-enabled` | `false` | When `true`, allows eligible out-of-stock items to be placed on backorder |
+| `sanitizer.inventory.max-backorder-quantity` | `5` | Maximum quantity allowed per backordered item |
 
 ### Dependencies
 
 | Service | Purpose |
 |---------|---------|
-| InventoryService | Provides available stock counts by SKU |
+| InventoryService | Provides available stock counts and backorder eligibility by SKU |
 
 ---
 
@@ -119,8 +123,36 @@ _None_
 
 _None_
 
+---
+
+## 5. CouponSanitizer
+
+**Purpose:** Validates and applies coupon codes, enforcing stacking rules and per-cart limits.
+
+### What it does
+
+- Validates each coupon code against `CouponService` and removes expired or invalid coupons
+- Enforces the maximum number of coupons allowed per cart
+- Checks coupon-item eligibility (some items may be excluded from certain coupons)
+- When stacking is disabled, keeps only the highest-value coupon and removes the rest
+- Calculates and applies discount amounts to eligible items
+- Notifies the customer when coupons are removed or adjusted
+
+### Configuration
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `sanitizer.coupon.max-per-cart` | `3` | Maximum number of coupon codes allowed per cart |
+| `sanitizer.coupon.stacking-enabled` | `false` | When `false`, only the highest-value coupon is kept |
+
+### Dependencies
+
+| Service | Purpose |
+|---------|---------|
+| CouponService | Validates coupon codes and determines discount values |
+
 <!-- AUTO-END -->
 
 ---
 
-*Last updated: 2026-03-03 | Commit: 0c3b92aeba1020ba1d68f58413c8f6e45ac8bb7b*
+*Last updated: 2026-03-03 | Commit: e1f5510b58f1221f3be51d7595d55f545d7e102f*
