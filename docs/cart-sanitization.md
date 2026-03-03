@@ -19,7 +19,7 @@ Each sanitizer runs in strict sequence; the output of one feeds into the next.
 | 2 | PriceSanitizer | [`PriceSanitizer.java`](../src/main/java/com/example/sanitizers/PriceSanitizer.java) | Validates and corrects item pricing |
 | 3 | InventorySanitizer | [`InventorySanitizer.java`](../src/main/java/com/example/sanitizers/InventorySanitizer.java) | Removes or adjusts items based on stock availability |
 | 4 | QuantityLimitSanitizer | [`QuantityLimitSanitizer.java`](../src/main/java/com/example/sanitizers/QuantityLimitSanitizer.java) | Enforces per-item and cart-wide quantity limits |
-| 5 | CouponSanitizer | [`CouponSanitizer.java`](../src/main/java/com/example/sanitizers/CouponSanitizer.java) | Validates and applies coupon codes |
+| 5 | ShippingSanitizer | [`ShippingSanitizer.java`](../src/main/java/com/example/sanitizers/ShippingSanitizer.java) | Validates shipping eligibility and calculates shipping costs |
 
 ---
 
@@ -60,12 +60,14 @@ _None_
 |----------|---------|-------------|
 | `sanitizer.price.max-discount-percent` | `50.0` | Maximum discount percentage allowed |
 | `sanitizer.price.min-price` | `0.01` | Items priced below this value are removed |
+| `sanitizer.price.price-match-enabled` | `false` | When `true`, matches competitor prices via PriceMatchService |
 
 ### Dependencies
 
 | Service | Purpose |
 |---------|---------|
 | PricingService | Provides current prices by SKU |
+| PriceMatchService | Matches competitor prices when `price-match-enabled` is `true` |
 
 ---
 
@@ -125,34 +127,34 @@ _None_
 
 ---
 
-## 5. CouponSanitizer
+## 5. ShippingSanitizer
 
-**Purpose:** Validates and applies coupon codes, enforcing stacking rules and per-cart limits.
+**Purpose:** Validates shipping eligibility for cart items and calculates shipping costs.
 
 ### What it does
 
-- Validates each coupon code against `CouponService` and removes expired or invalid coupons
-- Enforces the maximum number of coupons allowed per cart
-- Checks coupon-item eligibility (some items may be excluded from certain coupons)
-- When stacking is disabled, keeps only the highest-value coupon and removes the rest
-- Calculates and applies discount amounts to eligible items
-- Notifies the customer when coupons are removed or adjusted
+- Calls `ShippingService` to check whether each item can be shipped to the customer's destination
+- Removes items that cannot be shipped (hazmat, oversized, or regionally restricted)
+- Calculates per-item shipping cost based on weight and destination
+- Applies free shipping to all items when the cart subtotal meets or exceeds `freeShippingThreshold`
+- Sets the `shippable` flag on each remaining item
+- Notifies the customer when items are removed or free shipping is applied
 
 ### Configuration
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `sanitizer.coupon.max-per-cart` | `3` | Maximum number of coupon codes allowed per cart |
-| `sanitizer.coupon.stacking-enabled` | `false` | When `false`, only the highest-value coupon is kept |
+| `sanitizer.shipping.free-shipping-enabled` | `true` | When `true`, applies free shipping when the cart total meets the threshold |
+| `sanitizer.shipping.free-shipping-threshold` | `49.99` | Minimum cart subtotal (inclusive) required to qualify for free shipping |
 
 ### Dependencies
 
 | Service | Purpose |
 |---------|---------|
-| CouponService | Validates coupon codes and determines discount values |
+| ShippingService | Checks item shipping eligibility and calculates per-item shipping costs |
 
 <!-- AUTO-END -->
 
 ---
 
-*Last updated: 2026-03-03 | Commit: e1f5510b58f1221f3be51d7595d55f545d7e102f*
+*Last updated: 2026-03-03 | Commit: f9af793bcfc9049530d481867f98c722b6fd274a*
