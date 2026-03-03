@@ -60,6 +60,11 @@ The content between the markers must follow this structure:
    - **Configuration Properties** — table of `application.properties` keys, defaults, and descriptions (or "_None_" if no config)
    - **External Dependencies** — table of service names and their purpose (or "_None_" if no dependencies)
 
+## Git / Commit Rules
+
+- **Single commit only.** All changes must be in exactly one commit. If you need to make corrections after feedback, amend the existing commit (`git commit --amend`) instead of creating a new one. The PR must always contain a single commit.
+- Do **not** modify any files other than `docs/cart-sanitization.md`.
+
 ## Rules
 
 - Be precise and factual — only document what the code actually does.
