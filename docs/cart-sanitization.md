@@ -19,6 +19,7 @@ Each sanitizer runs in strict sequence; the output of one feeds into the next.
 | 1 | DuplicateSanitizer | [`DuplicateSanitizer.java`](../src/main/java/com/example/sanitizers/DuplicateSanitizer.java) | Remove duplicate SKUs |
 | 2 | PriceSanitizer | [`PriceSanitizer.java`](../src/main/java/com/example/sanitizers/PriceSanitizer.java) | Validate and correct pricing |
 | 3 | InventorySanitizer | [`InventorySanitizer.java`](../src/main/java/com/example/sanitizers/InventorySanitizer.java) | Check stock availability |
+| 4 | QuantityLimitSanitizer | [`QuantityLimitSanitizer.java`](../src/main/java/com/example/sanitizers/QuantityLimitSanitizer.java) | Enforce per-item and cart-wide quantity limits |
 
 ---
 
@@ -93,8 +94,34 @@ _None_
 |---------|---------|
 | InventoryService | Check available stock by SKU |
 
+---
+
+## 4. QuantityLimitSanitizer
+
+**Purpose:** Enforces per-item and cart-wide quantity limits after stock availability has been checked.
+
+### Behavior / Key Operations
+
+- Clamps each item's quantity to the configured `[minQuantityPerItem, maxQuantityPerItem]` range
+- If an item's quantity exceeds the maximum, reduces it to the maximum and adds a user-facing message
+- If an item's quantity is below the minimum, raises it to the minimum and adds a user-facing message
+- If the total number of unique SKUs in the cart exceeds `maxCartSize`, removes items from the end of the list until within the limit
+- Adds a user-facing message when items are removed due to cart size overflow
+
+### Configuration Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `sanitizer.quantity-limit.max-per-item` | `10` | Maximum quantity allowed per item |
+| `sanitizer.quantity-limit.min-per-item` | `1` | Minimum quantity allowed per item |
+| `sanitizer.quantity-limit.max-cart-size` | `50` | Maximum number of unique SKUs in the cart |
+
+### External Dependencies
+
+_None_
+
 <!-- AUTO-END -->
 
 ---
 
-*Last updated: 2026-03-03 | Commit: seed*
+*Last updated: 2026-03-03 | Commit: 8de3b172c34a06240eb5f2de12c11e26ae2b2856*
