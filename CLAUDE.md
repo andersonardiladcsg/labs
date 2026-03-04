@@ -34,6 +34,11 @@
 - If an existing rule is contradicted by the user, update or remove it.
 - Don't add speculative or one-off rules — only stable patterns confirmed by the user.
 
+## Agent Task Rules
+
+- **Never call `report_progress` before confirming there are actual file changes to commit.** Calling `report_progress` creates a commit and pushes a branch, which opens a PR. If a task turns out to be a no-op (e.g., the sanitization-docs agent finds no diff), no `report_progress` call must be made — end the task with a plain-text reply instead.
+- This applies especially to the sanitization-docs agent: if the diff against baseline is empty, do **not** call `report_progress` at all. Not even for an "Initial plan".
+
 ## Project Context
 
 - This is a lab/testing repo (`andersonardiladcsg/labs`) used for prototyping before applying changes to `checkout-cart-engine`.
